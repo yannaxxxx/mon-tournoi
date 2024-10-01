@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournoi</title>
+    <style>
+        /* Style global */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f7;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #000;
+        }
+
+        h2 {
+            font-size: 1.75em;
+            color: #888;
+        }
+
+        p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        /* Formulaire */
+        form {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1em;
+            color: #555;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background-color: #0071e3;
+            color: white;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #005bb5;
+        }
+
+        .joueurs-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .colonne {
+            display: flex;
+            flex-direction: column;
+            width: 48%;
+        }
+
+        /* Conteneur pour défiler les noms des joueurs */
+        #inputJoueurs {
+            max-height: 200px; /* Hauteur maximale du conteneur */
+            overflow-y: auto;  /* Ajout d'un défilement vertical */
+            margin-bottom: 20px; /* Espacement en bas */
+        }
+
+        /* Conteneur des matchs avec défilement */
+        #matchsContainer {
+            max-height: 400px; /* Hauteur maximale du conteneur */
+            overflow-y: auto;  /* Ajout d'un défilement vertical */
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .match {
+            margin: 10px 0;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Signature */
+        footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .colonne {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tournoi</h1>
+    <p>Indiquez le nombre total de joueurs pour commencer.</p>
+    <p>Ce programme vous permet d'organiser un tournoi en ajoutant des joueurs, en définissant les matchs, et en déterminant les gagnants à chaque étape.</p>
+
+    <!-- Formulaire pour indiquer le nombre de joueurs -->
+    <div id="nbJoueursForm">
+        <form id="formNbJoueurs">
+            <label for="nbJoueurs">Nombre de joueurs :</label>
+            <input type="number" id="nbJoueurs" name="nbJoueurs" min="2" required>
+            <button type="submit" class="btn">Continuer</button>
+        </form>
+    </div>
+
+    <!-- Formulaire pour entrer les noms des joueurs (affiché après) -->
+    <div id="joueursForm" style="display: none;">
+        <form id="formJoueurs">
+            <div class="joueurs-container" id="inputJoueurs">
+                <!-- Les champs pour les noms des joueurs seront générés ici -->
+            </div>
+            <button type="submit" class="btn">Commencer le tournoi</button>
+            <!-- Suppression de la mention "Programmé par Yannax" -->
+        </form>
+    </div>
+
+    <!-- Section du tournoi -->
+    <div id="tournoiSection" style="display: none;">
+        <h2 id="tourTitle">Tour 1</h2>
+        <div id="matchsContainer"></div>
+        <button id="nextRoundBtn" class="btn" style="display: none;">Valider et passer au tour suivant</button>
+    </div>
+
+    <!-- Résultat -->
+    <div id="resultat" style="display: none;"></div>
+
+    <footer>
+        <p>Programmé par Yannax</p>
+    </footer>
+
+    <script>
+        let nombreDeJoueurs = 0;
+        let joueurs = [];
+        let matchsActuels = [];
+        let tourActuel = 1;
+
+        // Fonction pour obtenir le titre du tour
+        function obtenirTitreTour() {
+            if (tourActuel >= 5) {
+                return tourActuel === 5 ? "Demi-finale" : "Finale";
+            }
+            return `Tour ${tourActuel}`;
+        }
+
+        // Gestion du formulaire pour le nombre de joueurs
+        document.getElementById('formNbJoueurs').addEventListener('submit', function (e) {
+            e.preventDefault();
+            nombreDeJoueurs = parseInt(document.getElementById('nbJoueurs').value);
+            genererFormulaireJoueurs(nombreDeJoueurs);
+        });
+
+        // Fonction pour générer les champs de saisie pour les joueurs
+        function genererFormulaireJoueurs(nbJoueurs) {
+            const inputJoueursDiv = document.getElementById('inputJoueurs');
+            inputJoueursDiv.innerHTML = ''; // Vider les champs précédents
+
+            const colonneGauche = document.createElement('div');
+            colonneGauche.classList.add('colonne');
+            const colonneDroite = document.createElement('div');
+            colonneDroite.classList.add('colonne');
+
+            for (let i = 1; i <= nbJoueurs; i++) {
+                const inputField = `
+                    <label for="joueur${i}">Joueur ${i}:</label>
+                    <input type="text" id="joueur${i}" name="joueur${i}" required><br>
+                `;
+                if (i <= nbJoueurs / 2) {
+                    colonneGauche.innerHTML += inputField;
+                } else {
+                    colonneDroite.innerHTML += inputField;
+                }
+            }
+
+            inputJoueursDiv.appendChild(colonneGauche);
+            inputJoueursDiv.appendChild(colonneDroite);
+
+            // Afficher le formulaire des joueurs et masquer celui du nombre de joueurs
+            document.getElementById('nbJoueursForm').style.display = 'none';
+            document.getElementById('joueursForm').style.display = 'block';
+        }
+
+        // Gestion du formulaire pour démarrer le tournoi avec les joueurs
+        document.getElementById('formJoueurs').addEventListener('submit', function (e) {
+            e.preventDefault();
+            joueurs = [];
+            for (let i = 1; i <= nombreDeJoueurs; i++) {
+                joueurs.push(document.getElementById(`joueur${i}`).value);
+            }
+            document.getElementById('joueursForm').style.display = 'none';
+            document.getElementById('tournoiSection').style.display = 'block';
+            afficherMatchs();
+        });
+
+        // Mélanger les joueurs aléatoirement
+        function melangerJoueurs(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Afficher les matchs du tour actuel
+        function afficherMatchs() {
+            const matchsContainer = document.getElementById('matchsContainer');
+            matchsContainer.innerHTML = ''; // Vider les matchs précédents
+            matchsActuels = []; // Réinitialiser les matchs actuels
+
+            joueurs = melangerJoueurs(joueurs); // Mélanger les joueurs
+
+            // Affichage des matchs
+            for (let i = 0; i < joueurs.length; i += 2) {
+                if (i + 1 < joueurs.length) {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.classList.add('match');
+                    matchDiv.innerHTML = `
+                        <p>${joueurs[i]} vs ${joueurs[i + 1]}</p>
+                        <label for="gagnant${i}">Gagnant:</label>
+                        <select id="gagnant${i}" class="gagnantSelect" required>
+                            <option value="">Choisir le gagnant</option>
+                            <option value="${joueurs[i]}">${joueurs[i]}</option>
+                            <option value="${joueurs[i + 1]}">${joueurs[i + 1]}</option>
+                        </select>
+                    `;
+                    matchsContainer.appendChild(matchDiv);
+                    matchsActuels.push(matchDiv);
+                }
+            }
+
+            document.getElementById('tourTitle').innerText = obtenirTitreTour();
+            document.getElementById('nextRoundBtn').style.display = 'inline-block'; // Afficher le bouton pour valider
+        }
+
+        // Passer au tour suivant
+        document.getElementById('nextRoundBtn').addEventListener('click', function () {
+            const gagnants = [];
+            const selects = document.querySelectorAll('.gagnantSelect');
+            selects.forEach(select => {
+                if (select.value) {
+                    gagnants.push(select.value);
+                }
+            });
+
+            joueurs = gagnants; // Les gagnants deviennent les nouveaux joueurs
+            tourActuel++;
+
+            if (joueurs.length === 1) {
+                afficherGagnant();
+            } else {
+                afficherMatchs(); // Continuer au tour suivant
+            }
+        });
+
+        // Afficher le gagnant final
+        function afficherGagnant() {
+            document.getElementById('tournoiSection').style.display = 'none';
+            document.getElementById('resultat').innerHTML = `
+                <h2>Le gagnant du tournoi est :</h2>
+                <p class="gagnant">${joueurs[0]}</p>
+            `;
+            document.getElementById('resultat').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
